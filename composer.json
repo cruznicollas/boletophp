@@ -7,9 +7,8 @@
         "boleto",
         "boletophp"
     ],
-    "homepage": "http://boletophp.com.br/",
     "require": {
-        "php": ">=7.4.26"
+        "php": ">=8.0.12"
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "^3.6"

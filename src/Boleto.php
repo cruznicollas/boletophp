@@ -6,18 +6,20 @@
 
     // DADOS DO BOLETO PARA O SEU CLIENTE
 
+use JetBrains\PhpStorm\Pure;
+
 class Boleto
 {
     // DADOS DO BOLETO PARA O SEU CLIENTE
-    public int $dias_de_prazo_para_pagamento;
-    public float $taxa_boleto;
-    public string $data_vencimento; //date("d/m/Y", time() + ($dias_de_prazo_para_pagamento * 86400));  // Prazo de X dias  OU  informe data: "13/04/2006"  OU  informe "" se Contra Apresentacao;
-    public string $valor_cobrado;
-    public string $valor_boleto;
+    public $dias_de_prazo_para_pagamento;
+    public $taxa_boleto;
+    public $data_vencimento; //date("d/m/Y", time() + ($dias_de_prazo_para_pagamento * 86400));  // Prazo de X dias  OU  informe data: "13/04/2006"  OU  informe "" se Contra Apresentação;
+    public $valor_cobrado;
+    public $valor_boleto;
 
-    public string $inicio_nosso_numero;  // Carteira SR: 80, 81 ou 82  -  Carteira CR: 90 (Confirmar com gerente qual usar)
-    public string $nosso_numero;  // Nosso numero sem o DV - REGRA: Máximo de 8 caracteres!
-    public string $numero_documento;    // Num do pedido ou do documento
+    public $inicio_nosso_numero;  // Carteira SR: 80, 81 ou 82  -  Carteira CR: 90 (Confirmar com gerente qual usar)
+    public $nosso_numero;  // Nosso numero sem o DV - REGRA: Máximo de 8 caracteres!
+    public $numero_documento;    // Num do pedido ou do documento
     public $data_documento; // Data de emissão do Boleto
     public $data_processamento; // Data de processamento do boleto (opcional)
 
@@ -87,6 +89,7 @@ class Boleto
     public $codigo_barras;
     public $linha_digitavel;
     public $agencia_codigo;
+    public $data_venc;
 
     // CONSTRUTOR DA CLASSE
 
@@ -96,7 +99,8 @@ class Boleto
 
         $this->dias_de_prazo_para_pagamento = 5;
         $this->taxa_boleto = 2.95;
-        $this->data_vencimento = ""; //date("d/m/Y", time() + ($dias_de_prazo_para_pagamento * 86400));  // Prazo de X dias  OU  informe data: "13/04/2006"  OU  informe "" se Contra Apresentacao;
+        $this->data_venc = "30/11/2021";
+        $this->data_vencimento = $this->data_venc; //date("d/m/Y", time() + ($dias_de_prazo_para_pagamento * 86400));  // Prazo de X dias  OU  informe data: "13/04/2006"  OU  informe "" se Contra Apresentacao;
         $this->valor_cobrado = "2950,00"; // Valor - REGRA: Sem pontos na milhar e tanto faz com "." ou "," ou com 1 ou 2 ou sem casa decimal
         $this->valor_cobrado = str_replace(",", ".", $this->valor_cobrado);
         $this->valor_boleto = number_format($this->valor_cobrado + $this->taxa_boleto, 2, ',', '');
@@ -152,53 +156,50 @@ class Boleto
         $this->cedente = "Coloque a Razão Social da sua empresa aqui";
 
         $this->codigobanco = "104";
-        $this->codigo_banco_com_dv = geraCodigoBanco($this->codigobanco);
+        $this->codigo_banco_com_dv = $this->geraCodigo_Banco($this->codigobanco);
         $this->nummoeda = "9";
-        $this->fator_vencimento = fator_vencimento($this->data_vencimento);
+        $this->fator_vencimento = $this->fator_vencimento($this->data_vencimento);
 
         //valor tem 10 digitos, sem virgula
-        $this->valor = formataNumero($this->valor_boleto, 10, 0, "valor");
+        $this->valor = $this->formataNumero($this->valor_boleto, 10, 0, "valor");
         //agencia é 4 digitos
-        $this->agencia = formataNumero($this->agencia, 4, 0);
+        $this->agencia = $this->formataNumero($this->agencia, 4, 0);
         //conta é 5 digitos
-        $this->conta = formataNumero($this->conta, 5, 0);
+        $this->conta = $this->formataNumero($this->conta, 5, 0);
         //dv da conta
-        $this->conta_dv = formataNumero($this->conta_dv, 1, 0);
+        $this->conta_dv = $this->formataNumero($this->conta_dv, 1, 0);
 
         //nosso número (sem dv) é 10 digitos
-        $this->nnum = $this->inicio_nosso_numero . formataNumero($this->nosso_numero, 8, 0);
+        $this->nnum = $this->inicio_nosso_numero . $this->formataNumero($this->nosso_numero, 8, 0);
         //dv do nosso número
-        $this->dv_nosso_numero = digitoVerificadorNossonumero($this->nnum);
+        $this->dv_nosso_numero = $this->digitoVerificadorNossonumero($this->nnum);
         $this->nossonumero_dv = $this->nnum .  $this->dv_nosso_numero;
 
         //conta cedente (sem dv) é 11 digitos
-        $this->conta_cedente = formataNumero($this->conta_cedente, 11, 0);
+        $this->conta_cedente = $this->formataNumero($this->conta_cedente, 11, 0);
         //dv da conta cedente
-        $this->conta_cedente_dv = formataNumero($this->conta_cedente_dv, 1, 0);
+        $this->conta_cedente_dv = $this->formataNumero($this->conta_cedente_dv, 1, 0);
 
         $this->ag_contacedente = $this->agencia . $this->conta_cedente;
 
         // 43 numeros para o calculo do digito verificador do codigo de barras
-        $this->dv = digitoVerificadorBarra("$this->codigobanco$this->nummoeda$this->fator_vencimento$this->valor$this->nnum$this->ag_contacedente");
+        $this->dv = $this->digitoVerificadorBarra("$this->codigobanco$this->nummoeda$this->fator_vencimento$this->valor$this->nnum$this->ag_contacedente");
         // Numero para o codigo de barras com 44 digitos
         $this->linha = "$this->codigobanco$this->nummoeda$this->dv$this->fator_vencimento$this->valor$this->nnum$this->ag_contacedente";
 
-        $this->nossonumero = substr($this->Nossonumero_dv, 0, 10) . '-' . substr($this->nossonumero_dv, 10, 1);
+        $this->nossonumero = substr($this->nossonumero_dv, 0, 10) . '-' . substr($this->nossonumero_dv, 10, 1);
         $this->agencia_codigo = $this->agencia . " / " . $this->conta_cedente . "-" . $this->conta_cedente_dv;
 
 
         $this->codigo_barras = $this->linha;
-        $this->linha_digitavel = monta_linha_digitavel($this->linha);
+        $this->linha_digitavel = $this->monta_linha_digitavel($this->linha);
+        // $this->codigo_de_barras_impresso = $this->fbarcode($this->codigo_barras);
     }
-// FUNÇÕES
-
-    function GerarBoleto()
-    {
-    }
+    // FUNÇÕES
 
     function digitoVerificadorNossonumero($numero)
     {
-        $resto2 = modulo_11($numero, 9, 1);
+        $resto2 = $this->modulo_11($numero, 9, 1);
         $digito = 11 - $resto2;
         if ($digito == 10 || $digito == 11) {
             $dv = 0;
@@ -211,7 +212,7 @@ class Boleto
 
     function digitoVerificadorBarra($numero)
     {
-        $resto2 = modulo_11($numero, 9, 1);
+        $resto2 = $this->modulo_11($numero, 9, 1);
         if ($resto2 == 0 || $resto2 == 1 || $resto2 == 10) {
             $dv = 1;
         } else {
@@ -251,24 +252,24 @@ class Boleto
     function fbarcode($valor)
     {
 
-        $fino = 1;
-        $largo = 3;
-        $altura = 50;
+        $fino = 1 ;
+        $largo = 3 ;
+        $altura = 50 ;
 
-        $barcodes[0] = "00110";
-        $barcodes[1] = "10001";
-        $barcodes[2] = "01001";
-        $barcodes[3] = "11000";
-        $barcodes[4] = "00101";
-        $barcodes[5] = "10100";
-        $barcodes[6] = "01100";
-        $barcodes[7] = "00011";
-        $barcodes[8] = "10010";
-        $barcodes[9] = "01010";
+        $barcodes[0] = "00110" ;
+        $barcodes[1] = "10001" ;
+        $barcodes[2] = "01001" ;
+        $barcodes[3] = "11000" ;
+        $barcodes[4] = "00101" ;
+        $barcodes[5] = "10100" ;
+        $barcodes[6] = "01100" ;
+        $barcodes[7] = "00011" ;
+        $barcodes[8] = "10010" ;
+        $barcodes[9] = "01010" ;
         for ($f1 = 9; $f1 >= 0; $f1--) {
             for ($f2 = 9; $f2 >= 0; $f2--) {
-                $f = ($f1 * 10) + $f2;
-                $texto = "";
+                $f = ($f1 * 10) + $f2 ;
+                $texto = "" ;
                 for ($i = 1; $i < 6; $i++) {
                     $texto .=  substr($barcodes[$f1], ($i - 1), 1) . substr($barcodes[$f2], ($i - 1), 1);
                 }
@@ -277,24 +278,24 @@ class Boleto
         }
 
 
-        //Desenho da barra
+//Desenho da barra
 
 
-        //Guarda inicial
+//Guarda inicial
         ?><img src=imagens/p.png width=<?php echo $fino?> height=<?php echo $altura?> border=0><img
-        src=imagens/b.png width=<?php echo $fino?> height=<?php echo $altura?> border=0><img
-        src=imagens/p.png width=<?php echo $fino?> height=<?php echo $altura?> border=0><img
-        src=imagens/b.png width=<?php echo $fino?> height=<?php echo $altura?> border=0><img
+                src=imagens/b.png width=<?php echo $fino?> height=<?php echo $altura?> border=0><img
+                src=imagens/p.png width=<?php echo $fino?> height=<?php echo $altura?> border=0><img
+                src=imagens/b.png width=<?php echo $fino?> height=<?php echo $altura?> border=0><img
         <?php
         $texto = $valor ;
         if ((strlen($texto) % 2) <> 0) {
             $texto = "0" . $texto;
         }
 
-        // Draw dos dados
+// Draw dos dados
         while (strlen($texto) > 0) {
-            $i = round(esquerda($texto, 2));
-            $texto = direita($texto, strlen($texto) - 2);
+            $i = round($this->esquerda($texto, 2));
+            $texto = $this->direita($texto, strlen($texto) - 2);
             $f = $barcodes[$i];
             for ($i = 1; $i < 11; $i += 2) {
                 if (substr($f, ($i - 1), 1) == "0") {
@@ -303,28 +304,30 @@ class Boleto
                     $f1 = $largo ;
                 }
                 ?>
-            src=imagens/p.png width=<?php echo $f1?> height=<?php echo $altura?> border=0><img
-                <?php
-                if (substr($f, $i, 1) == "0") {
-                    $f2 = $fino ;
-                } else {
-                    $f2 = $largo ;
-                }
-                ?>
-            src=imagens/b.png width=<?php echo $f2?> height=<?php echo $altura?> border=0><img
-                <?php
-            // Draw guarda final
-                ?>
-        src=imagens/p.png width=<?php echo $largo?> height=<?php echo $altura?> border=0><img
-        src=imagens/b.png width=<?php echo $fino?> height=<?php echo $altura?> border=0><img
-        src=imagens/p.png width=<?php echo 1?> height=<?php echo $altura?> border=0>
+                src=imagens/p.png width=<?php echo $f1?> height=<?php echo $altura?> border=0><img
+                    <?php
+                    if (substr($f, $i, 1) == "0") {
+                        $f2 = $fino ;
+                    } else {
+                        $f2 = $largo ;
+                    }
+                    ?>
+                        src=imagens/b.png width=<?php echo $f2?> height=<?php echo $altura?> border=0><img
                 <?php
             }
-        }//Fim da função
-    }
+        }
+
+// Draw guarda final
+        ?>
+        src=imagens/p.png width=<?php echo $largo?> height=<?php echo $altura?> border=0><img
+                src=imagens/b.png width=<?php echo $fino?> height=<?php echo $altura?> border=0><img
+                src=imagens/p.png width=<?php echo 1?> height=<?php echo $altura?> border=0>
+        <?php
+    } //Fim da função
+
     function esquerda($entra, $comp)
     {
-        return substr($entra, 0, $comp);
+        return floatval(substr($entra, 0, $comp));
     }
 
     function direita($entra, $comp)
@@ -339,13 +342,13 @@ class Boleto
             $ano = $data[2];
             $mes = $data[1];
             $dia = $data[0];
-            return(abs((_dateToDays("1997", "10", "07")) - (_dateToDays($ano, $mes, $dia))));
+            return(abs(($this->dateToDays("1997", "10", "07")) - ($this->dateToDays($ano, $mes, $dia))));
         } else {
             return "0000";
         }
     }
 
-    function _dateToDays($year, $month, $day)
+    function dateToDays($year, $month, $day)
     {
         $century = substr($year, 0, 2);
         $year = substr($year, 2, 2);
@@ -414,7 +417,7 @@ class Boleto
          *    da Febraban - www.febraban.org.br
          *
          *   Entrada:
-         *     $num: string numérica para a qual se deseja calcularo digito verificador;
+         *     $num: numérica para a qual se deseja calcularo digito verificador;
          *     $base: valor maximo de multiplicacao [2-$base]
          *     $r: quando especificado um devolve somente o resto
          *
@@ -473,7 +476,7 @@ class Boleto
             // do campo livre e DV (modulo10) deste campo
             $p1 = substr($codigo, 0, 4);
             $p2 = substr($codigo, 19, 5);
-            $p3 = modulo_10("$p1$p2");
+            $p3 = $this->modulo_10("$p1$p2");
             $p4 = "$p1$p2$p3";
             $p5 = substr($p4, 0, 5);
             $p6 = substr($p4, 5);
@@ -482,7 +485,7 @@ class Boleto
             // 2. Campo - composto pelas posiçoes 6 a 15 do campo livre
             // e livre e DV (modulo10) deste campo
             $p1 = substr($codigo, 24, 10);
-            $p2 = modulo_10($p1);
+            $p2 = $this->modulo_10($p1);
             $p3 = "$p1$p2";
             $p4 = substr($p3, 0, 5);
             $p5 = substr($p3, 5);
@@ -491,7 +494,7 @@ class Boleto
             // 3. Campo composto pelas posicoes 16 a 25 do campo livre
             // e livre e DV (modulo10) deste campo
             $p1 = substr($codigo, 34, 10);
-            $p2 = modulo_10($p1);
+            $p2 = $this->modulo_10($p1);
             $p3 = "$p1$p2";
             $p4 = substr($p3, 0, 5);
             $p5 = substr($p3, 5);
@@ -510,15 +513,40 @@ class Boleto
             return "$campo1 $campo2 $campo3 $campo4 $campo5";
     }
 
-    function geraCodigoBanco($numero)
+    function geraCodigo_Banco($numero)
     {
         $parte1 = substr($numero, 0, 3);
-        $parte2 = modulo_11($parte1);
+        $parte2 = $this->modulo_11($parte1);
         return $parte1 . "-" . $parte2;
     }
 }
 
-
 // NÃO ALTERAR!
 
-include("include/layout_cef.php");
+$bol = new Boleto();
+// echo $bol->gerarBoleto();
+
+
+
+
+
+
+//echo $bol->dias_de_prazo_para_pagamento . "     <br>     ";
+//echo $bol->taxa_boleto . "     <br>     ";
+//echo $bol->data_vencimento . "     <br>     ";
+//echo $bol->valor_cobrado . "     <br>     ";
+//echo $bol->valor_boleto . "     <br>     ";
+//echo $bol->codigobanco . "     <br>     ";
+//echo $bol->codigo_banco_com_dv . "     <br>     ";
+//echo $bol->nummoeda . "     <br>     ";
+//echo $bol->fator_vencimento . "     <br>     ";
+//echo $bol->valor . "     <br>     ";
+//echo $bol->nnum . "     <br>     ";
+//echo $bol->dv_nosso_numero . "     <br>     ";
+//echo $bol->nossonumero_dv . "     <br>     ";
+//echo $bol->ag_contacedente . "     <br>     ";
+//echo $bol->dv . "     <br>     ";
+//echo $bol->linha . "     <br>     ";
+//echo $bol->codigo_barras . "     <br>     ";
+//echo $bol->linha_digitavel . "     <br>     ";
+//echo $bol->agencia_codigo . "     <br>     ";
